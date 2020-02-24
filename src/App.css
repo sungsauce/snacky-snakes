@@ -31,3 +31,20 @@
     transform: rotate(360deg);
   }
 }
+
+table {
+  border-collapse: collapse;
+}
+
+table, th, td {
+  border: 1px solid white;
+}
+
+th, td {
+  height: 1em;
+  width: 1em;
+}
+
+.snake {
+  background-color: #4CAF50;
+}
