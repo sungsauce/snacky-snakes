@@ -2,24 +2,30 @@ import React, { useState, useEffect, useReducer } from 'react';
 
 const initialState = {
   board: 11,
-  row: 5,
-  col: 5,
+  // snake: [5,5], // row, col
+  snakeRow: 5,
+  snakeCol: 5,
+  snackRow: 0,
+  snackCol: 0,
+  // snack: [0,0], // row, col
   length: 1,
-  direction: "right"
+  direction: "right",
+  speed: 1000,
 }
 
+// TODO: food appearance, eating, snake growth, game over (snake collision)
 const reducer = (state, action) => {
   switch (action.type) {
     case 'tick':
       switch (state.direction) {
         case 'up':
-          return {...state, row: state.row === 0 ? state.board - 1 : --state.row}
+          return {...state, snakeRow: state.snakeRow === 0 ? state.board - 1 : --state.snakeRow}
         case 'down':
-          return {...state, row: state.row === state.board - 1 ? 0 : ++state.row}
+          return {...state, snakeRow: state.snakeRow === state.board - 1 ? 0 : ++state.snakeRow}
         case 'left':
-          return {...state, col: state.col === 0 ? state.board - 1 : --state.col}
+          return {...state, snakeCol: state.snakeCol === 0 ? state.board - 1 : --state.snakeCol}
         case 'right':
-          return {...state, col: state.col === state.board - 1 ? 0 : ++state.col}
+          return {...state, snakeCol: state.snakeCol === state.board - 1 ? 0 : ++state.snakeCol}
         default:
       }
       break
@@ -41,7 +47,7 @@ export default function Board() {
   useEffect(() => {
     setInterval(() => {
       dispatch({type: "tick"})
-    }, 1000)
+    }, state.speed)
     document.addEventListener("keydown", handleKeyDown)
   }, []);
   
@@ -62,6 +68,13 @@ export default function Board() {
       default:
     }
   }
+
+  switch (state.direction) {
+    case 'right':
+      
+      break
+    default:
+  }
   
   return (
     <div>
@@ -70,7 +83,7 @@ export default function Board() {
           {new Array(state.board).fill(0).map((row, rowIdx) => (
             <tr key={rowIdx}>
               {new Array(state.board).fill(0).map((col, colIdx) => (
-                <td key={colIdx} className={(rowIdx === state.row && colIdx === state.col) ? "snake" : null}></td>
+                <td key={colIdx} className={(rowIdx === state.snakeRow && colIdx === state.snakeCol) ? "snake" : null}></td>
               ))}
             </tr>      
           ))}
