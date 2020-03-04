@@ -1,54 +1,49 @@
 import React, { useState, useEffect, useReducer } from 'react'
+import SnakeLimb from './SnakeLimb'
 
 const initialState = {
-  board: 11,
-  snakeRow: 5,
-  snakeCol: 5,
-  snackRow: 0,
-  snackCol: 0,
+  boardSize: 11,
+  board: new Array(11).fill(new Array(11).fill(0)),
+  snakeHead: new SnakeLimb(5, 5),
+  length: 1,
   // snack: [0,0], // row, col
-  length: 3,
-  direction: 'right',
+  // direction: 'right',
   speed: 1000
 }
 
-// TODO: food appearance, eating, snake growth, game over (snake collision)
+// TODO: movement/lag, food, eating, snake growth, game over (snake collision)
 const reducer = (state, action) => {
   switch (action.type) {
+    case 'move':
+      propogate(state.snakeHead, action.nextPos)
+      return { ...state, snakeHead: state.snakeHead }
     case 'tick':
-      switch (state.direction) {
-        case 'up':
-          return {
-            ...state,
-            snakeRow: state.snakeRow === 0 ? state.board - 1 : --state.snakeRow
-          }
-        case 'down':
-          return {
-            ...state,
-            snakeRow: state.snakeRow === state.board - 1 ? 0 : ++state.snakeRow
-          }
-        case 'left':
-          return {
-            ...state,
-            snakeCol: state.snakeCol === 0 ? state.board - 1 : --state.snakeCol
-          }
-        case 'right':
-          return {
-            ...state,
-            snakeCol: state.snakeCol === state.board - 1 ? 0 : ++state.snakeCol
-          }
-        default:
-      }
-      break
-    case 'moveUp':
-      return { ...state, direction: 'up' }
-    case 'moveDown':
-      return { ...state, direction: 'down' }
-    case 'moveLeft':
-      return { ...state, direction: 'left' }
-    case 'moveRight':
-      return { ...state, direction: 'right' }
+      return { ...state, board: paint(state.snakeHead) }
     default:
+  }
+}
+
+// paint the board according to the snake
+function paint(snake) {
+  const board = initialState.board
+
+  let limb = snake
+  console.log('snake: ', limb)
+  while (limb) {
+    board[limb.row][limb.col] = 1
+    limb = limb.next
+    // console.log("board in while loop: ", board)
+  }
+  return board
+}
+
+function propogate(limb, nextPos) {
+  const { row, col } = limb
+  const { nextRow = row, nextCol = col } = nextPos
+  limb.row = nextRow
+  limb.col = nextCol
+  if (limb.next) {
+    propogate(limb.next, { row, col })
   }
 }
 
@@ -56,70 +51,40 @@ export default function Board() {
   const [state, dispatch] = useReducer(reducer, initialState)
 
   useEffect(() => {
-    setInterval(() => {
-      dispatch({ type: 'tick' })
-    }, state.speed)
+    setInterval(() => dispatch({ type: 'tick' }), state.speed)
     document.addEventListener('keydown', handleKeyDown)
-  }, [])
+  }, []) // empty dependency to ensure this is only run once on component mount
 
   const handleKeyDown = evt => {
+    const { row, col } = state.snakeHead
+    let nextPos
     switch (evt.key) {
       case 'ArrowUp':
-        dispatch({ type: 'moveUp' })
+        nextPos = { row: row === 0 ? state.boardSize - 1 : row - 1, col }
         break
       case 'ArrowDown':
-        dispatch({ type: 'moveDown' })
+        nextPos = { row: row === state.boardSize - 1 ? 0 : row + 1, col }
         break
       case 'ArrowLeft':
-        dispatch({ type: 'moveLeft' })
+        nextPos = { row, col: col === 0 ? state.boardSize - 1 : col - 1 }
         break
       case 'ArrowRight':
-        dispatch({ type: 'moveRight' })
+        nextPos = { row, col: col === state.boardSize - 1 ? 0 : col + 1 }
         break
       default:
     }
+
+    if (nextPos) dispatch({ type: 'move', nextPos })
   }
-
-  let snakeHead = { row: state.snakeRow, col: state.snakeCol }
-  let snakeTail
-
-  switch (state.direction) {
-    case 'right':
-      snakeTail = { row: snakeHead.row, col: snakeHead.col - state.length + 1 }
-      break
-    case 'left':
-      snakeTail = { row: snakeHead.row, col: snakeHead.col + state.length - 1 }
-      break
-    case 'up':
-      snakeTail = { row: snakeHead.row + state.length - 1, col: snakeHead.col }
-      break
-    case 'down':
-      snakeTail = { row: snakeHead.row - state.length + 1, col: snakeHead.col }
-      break
-    default:
-  }
-
-  const rowRange = [snakeHead.row, snakeTail.row].sort((a, b) => a - b)
-  const colRange = [snakeHead.col, snakeTail.col].sort((a, b) => a - b)
 
   return (
     <div>
       <table>
         <tbody>
-          {new Array(state.board).fill(0).map((row, rowIdx) => (
+          {state.board.map((row, rowIdx) => (
             <tr key={rowIdx}>
-              {new Array(state.board).fill(0).map((col, colIdx) => (
-                <td
-                  key={colIdx}
-                  className={
-                    rowIdx >= rowRange[0] &&
-                    rowIdx <= rowRange[1] &&
-                    colIdx >= colRange[0] &&
-                    colIdx <= colRange[1]
-                      ? 'snake'
-                      : null
-                  }
-                ></td>
+              {row.map((col, colIdx) => (
+                <td key={colIdx} className={col ? 'snake' : null}></td>
               ))}
             </tr>
           ))}
