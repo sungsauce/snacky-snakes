@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css';
-import Board from './Snake.js';
+import Board from './Board.js';
 
 function App() {
   return (
