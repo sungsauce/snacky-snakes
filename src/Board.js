@@ -6,9 +6,7 @@ const createBoard = size => {
   return rows.map((r, i) => (rows[i] = new Array(size).fill(0)))
 }
 
-// paint the board according to the snake
 const paint = (snake, snack, boardSize) => {
-  // debugger
   const board = createBoard(boardSize)
   board[snack.row][snack.col] = 2
   let limb = snake
@@ -70,7 +68,7 @@ export const getNewSnack = (boardSize, snack = {row: null, col: null}, snake = n
 }
 
 
-const initialBoardSize = 11
+const initialBoardSize = 5
 const initialSnake = new SnakeLimb(Math.floor(initialBoardSize/2), Math.floor(initialBoardSize/2) - 1)
 const initialState = {
   boardSize: initialBoardSize,
@@ -87,8 +85,6 @@ const reducer = (state, action) => {
     case 'changeDirection':
       return { ...state, direction: action.direction }
     case 'tick':
-
-      // get next position
       const nextPos = state.snakeHead.getNextPos(
         state.direction,
         state.boardSize
@@ -96,29 +92,36 @@ const reducer = (state, action) => {
 
       let snack = state.snack
       let grow = false
+      let speed = state.speed
       // if snake is about to eat the snack,
       // grow tail, and replace snack with a new snack
       if (nextPos.row === state.snack.row && nextPos.col === state.snack.col) {
         grow = true
         snack = getNewSnack(state.boardSize, state.snack, state.snakeHead)
+        speed = state.speed - 20 > 50 ? state.speed - 20 : 50
       }
       state.snakeHead.move(nextPos, grow)
       return {
         ...state,
-        snack: snack,
+        snack,
+        speed,
         board: paint(state.snakeHead, snack, state.boardSize)
       }
     default:
   }
 }
 
+// store it in a useRef Hook and keep the mutable value in the '.current' property.
+let timerId
 export default function Board() {
   const [state, dispatch] = useReducer(reducer, initialState)
 
+  // Similar to componentDidMount and componentDidUpdate:
   useEffect(() => {
-    setInterval(() => dispatch({ type: 'tick' }), state.speed)
+    if (timerId) clearInterval(timerId)
+    timerId = setInterval(() => dispatch({ type: 'tick' }), state.speed)
     document.addEventListener('keydown', handleKeyDown)
-  }, [state.speed]) // empty dependency to ensure this is only run once on component mount
+  }, [state.speed]) // empty dependency will ensure this is only run once on component mount
 
   const handleKeyDown = evt => {
     const direction = evt.key
