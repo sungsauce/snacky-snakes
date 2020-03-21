@@ -2,7 +2,7 @@ import React, { useEffect, useReducer } from 'react'
 import SnakeLimb from './SnakeLimb'
 import {createBoard, paint, getNewSnack} from './BoardHelper'
 
-const initialBoardSize = 5
+const initialBoardSize = 11
 const initialSnake = new SnakeLimb(Math.floor(initialBoardSize/2), Math.floor(initialBoardSize/2) - 1)
 const initialState = {
   boardSize: initialBoardSize,
@@ -67,6 +67,7 @@ export default function Board() {
   }
 
   if (state.gameover) {
+    clearInterval(timerId)
     alert("GAME OVER!!")
   }
 
