@@ -33,18 +33,26 @@ export default class SnakeLimb {
 
   /**
    * Call on snakeHead, given nextPos
-   * Return false if collision with self is imminent
+   * Return true (gameover) if collision with self is imminent
    */
-  move(nextPos, grow = false) {
-    // if head's nextPos matches that of any of its limbs,
-    // return false
-    // in other words: if the initial nextPos matches any subsequent ones
+  move(nextPos, grow = false, headPos = null) {
+    // if head's nextPos matches any of its limbs' nextPos
+    if (headPos && nextPos.row === headPos.row && nextPos.col === headPos.col) {
+      return true
+    }
+
+    // on initial call, set headPos parameter to the head's next position
+    if (!headPos) {
+      headPos = nextPos
+    }
+
     const { row, col } = this
     const { row: nextRow, col: nextCol } = nextPos
     this.row = nextRow
     this.col = nextCol
+
     if (this.next) {
-      this.move.call(this.next, { row, col }, grow)
+      return this.move.call(this.next, { row, col }, grow, headPos)
     } else if (grow) {
       this.next = new SnakeLimb(row, col)
     }

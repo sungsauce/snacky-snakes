@@ -1,72 +1,6 @@
 import React, { useEffect, useReducer } from 'react'
 import SnakeLimb from './SnakeLimb'
-
-const createBoard = size => {
-  const rows = new Array(size).fill()
-  return rows.map((r, i) => (rows[i] = new Array(size).fill(0)))
-}
-
-const paint = (snake, snack, boardSize) => {
-  const board = createBoard(boardSize)
-  board[snack.row][snack.col] = 2
-  let limb = snake
-  while (limb) {
-    board[limb.row][limb.col] = 1
-    limb = limb.next
-  }
-  return board
-}
-
-/**
- * get a new snack that is not at the same
- * location as either the snack OR the snake
- * @param {number} boardSize 
- * @param {object} snack 
- * @param {SnakeLimb} snake 
- */
-export const getNewSnack = (boardSize, snack = {row: null, col: null}, snake = new SnakeLimb()) => {
-
-  function getNewLoc() {
-    let row = Math.floor(Math.random() * boardSize)
-    let col = Math.floor(Math.random() * boardSize)
-    return {row, col}
-  }
-
-  let {row, col} = getNewLoc()
-  
-  // if after checking snake and no collisions there, return location
-  while (true) {
-    let snackCollision = row === snack.row && col === snack.col
-    let snakeCollision = true // possibly true
-    
-    // if there's a snack collision, get a new location
-    if (snackCollision) {
-      let newLoc = getNewLoc()
-      row = newLoc.row
-      col = newLoc.col
-    // if there's NO snack collision, loop through snake to check
-    } else {
-      let limb = snake
-      while (limb) {
-        if (row === limb.row && col === limb.col) {
-          let newLoc = getNewLoc()
-          row = newLoc.row
-          col = newLoc.col
-          // stop looping through snake if collision is found
-          break
-        // if at the tail and no collisions, can safely say so
-        } else if (!limb.next) {
-          snakeCollision = false
-        }
-        limb = limb.next
-      }
-    }
-    if (!snakeCollision && !snackCollision) break
-  }
-
-  return {row, col}
-}
-
+import {createBoard, paint, getNewSnack} from './BoardHelper'
 
 const initialBoardSize = 5
 const initialSnake = new SnakeLimb(Math.floor(initialBoardSize/2), Math.floor(initialBoardSize/2) - 1)
@@ -76,10 +10,10 @@ const initialState = {
   snakeHead: initialSnake,
   snack: getNewSnack(initialBoardSize),
   direction: 'ArrowRight',
-  speed: 500
+  speed: 500,
+  gameover: false
 }
 
-// TODO: game over (snake collision)
 const reducer = (state, action) => {
   switch (action.type) {
     case 'changeDirection':
@@ -91,21 +25,24 @@ const reducer = (state, action) => {
       )
 
       let snack = state.snack
-      let grow = false
       let speed = state.speed
+      let grow = false
       // if snake is about to eat the snack,
       // grow tail, and replace snack with a new snack
-      if (nextPos.row === state.snack.row && nextPos.col === state.snack.col) {
+      if (nextPos.row === snack.row && nextPos.col === snack.col) {
         grow = true
         snack = getNewSnack(state.boardSize, state.snack, state.snakeHead)
         speed = state.speed - 20 > 50 ? state.speed - 20 : 50
       }
-      state.snakeHead.move(nextPos, grow)
+      // if snake is about to collide with itself,
+      // gameover!
+      const isGameOver = state.snakeHead.move(nextPos, grow)
       return {
         ...state,
         snack,
         speed,
-        board: paint(state.snakeHead, snack, state.boardSize)
+        board: paint(state.snakeHead, snack, state.boardSize),
+        gameover: !!isGameOver
       }
     default:
   }
@@ -118,6 +55,7 @@ export default function Board() {
 
   // Similar to componentDidMount and componentDidUpdate:
   useEffect(() => {
+    // if speed changes, start a new setInterval timer at the new speed
     if (timerId) clearInterval(timerId)
     timerId = setInterval(() => dispatch({ type: 'tick' }), state.speed)
     document.addEventListener('keydown', handleKeyDown)
@@ -126,6 +64,10 @@ export default function Board() {
   const handleKeyDown = evt => {
     const direction = evt.key
     dispatch({ type: 'changeDirection', direction })
+  }
+
+  if (state.gameover) {
+    alert("GAME OVER!!")
   }
 
   return (
